@@ -96,3 +96,56 @@ export const Cat: CatType[] = [
   },
 ];
 ```
+
+## express 미들웨어 구현
+
+- https://expressjs.com/en/guide/writing-middleware.html 참조
+
+- express 서버의 경우 최상단에서 아래로 Route를 찾는다 (순서가 중요하다는 이야기)
+
+- 매번 라우트에서 반복되는 로직 (로그, 헤더 등)을 따로 빼서 미들웨어로 관리
+
+```typescript
+// 라우터 최상단에 작성
+// 미들웨어
+app.use((req, res, next) => {
+  console.log(req.rawHeaders[1]);
+  next(); // 라우터를 찾을수 있도록 (다음행동 지시)
+});
+```
+
+- 쉽게 라우터 중간에 로깅등이 필요하다 싶으면 라우터 중간에 넣어주면 된다
+
+```typescript
+// 블루라는 캣 가져옴
+app.get("/cats/blue", (req: express.Request, res: express.Response) => {
+  res.send({ blue: Cat[0] });
+});
+
+app.use((req, res, next) => {
+  // some logging
+});
+
+// som 이라는 캣 가져옴
+app.get("/cats/som", (req: express.Request, res: express.Response) => {
+  res.send({ som: Cat[1] });
+});
+```
+
+- 라우터 전용 미들웨어도 제작가능하다
+
+```typescript
+app.get("/cats/som", (req, res, next) => {
+  console.log("this is som middleware");
+  next();
+});
+```
+
+- 에러전용 미들웨어의경우 맨하단에 작성
+
+```typescript
+app.use((req, res, next) => {
+  console.log("this is error middleware");
+  res.send({ error: "404 not found error" });
+});
+```
