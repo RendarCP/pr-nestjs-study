@@ -149,3 +149,85 @@ app.use((req, res, next) => {
   res.send({ error: "404 not found error" });
 });
 ```
+
+## express Create API 개발
+
+- CRUD로 API를 개발하는데 여기서는 CREATE,READ API 개발
+
+### READ API
+
+1. 고양이 정보 모두를 조회하는 api
+
+- db연결시에는 예외처리르 해줘야된다
+
+```typescript
+app.get("/cat", (req, res) => {
+  try {
+    // db연결의 경우 예외 처리
+    const cats = Cat;
+    res.send({
+      success: true,
+      data: {
+        cats,
+      },
+    });
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+```
+
+2. 특정 고양이 정보 조회
+
+```typescript
+// READ 특정 고양이 데이터 가져오기
+app.get("/cats/:id", (req: express.Request, res: express.Response) => {
+  try {
+    // db연결의 경우 예외 처리
+    const params = req.params; // 파라미터값을 가져와서
+    const cats = Cat.find((cat) => cat.id === params.id); // 데이터 조회
+    res.status(200).send({
+      success: true,
+      data: {
+        cats,
+      },
+    });
+  } catch (error: any) {
+    res.status(400).send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+```
+
+3. 고양이 create api
+
+```typescript
+// CREATE 고양이 추가 api
+app.post("/cats", (req: express.Request, res: express.Response) => {
+  try {
+    const data = req.body;
+    Cat.push(data);
+    res.status(200).send({
+      success: true,
+      data: { data },
+    });
+  } catch (error: any) {
+    res.status(400).send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+```
+
+- 기본적으로 express는 json을 읽을수 없으므로 json을 읽을수 있게 미들웨어 추가
+
+```typescript
+// json middleware
+app.use(express.json());
+```
