@@ -14,7 +14,9 @@ npm install @type/express -D
 
 - devDependency로 설치하는 이유는 어차피 js파일로 실행되기때문에 개발환경에서만 필요
 
-## express 구현 및 실행
+## 1. express 구현 및 실행
+
+---
 
 - 공식 문서 참조 https://expressjs.com/en/starter/hello-world.html
 
@@ -97,7 +99,9 @@ export const Cat: CatType[] = [
 ];
 ```
 
-## express 미들웨어 구현
+## 2. express 미들웨어 구현
+
+---
 
 - https://expressjs.com/en/guide/writing-middleware.html 참조
 
@@ -150,7 +154,9 @@ app.use((req, res, next) => {
 });
 ```
 
-## express Create API 개발
+## 3. express Create API 개발
+
+---
 
 - CRUD로 API를 개발하는데 여기서는 CREATE,READ API 개발
 
@@ -231,3 +237,112 @@ app.post("/cats", (req: express.Request, res: express.Response) => {
 // json middleware
 app.use(express.json());
 ```
+
+## 4. express Route 분리 작업
+
+---
+
+1. src 디렉토리내에 cats 폴더 제작
+2. 기존 모델 및 라우터 이름 변경하고, cats 폴더에 넣는다
+
+   - app.ts -> cats.route.ts
+   - app.model.ts -> cats.model.ts
+
+3. 미들웨어를 제외한 cats api를 모두 cats.route.ts로 옮긴다
+   - 이제는 라우터 기반 api로 변했으니 Router를 import한뒤에 router 적용
+
+```typescript
+import { Cat, CatType } from "./cats.model";
+import { Router, Request, Response } from "express";
+
+const router = Router();
+
+router.get("/", (req: Request, res: Response) => {
+  res.send({ cats: Cat });
+});
+
+// 블루라는 캣 가져옴
+router.get("/cats/blue", (req: Request, res: Response) => {
+  res.send({ blue: Cat[0] });
+});
+
+// som 이라는 캣 가져옴
+router.get("/cats/som", (req: Request, res: Response) => {
+  res.send({ som: Cat[1] });
+});
+
+// READ 고양이 정보 모두 가져오기
+router.get("/cats", (req: Request, res: Response) => {
+  try {
+    // db연결의 경우 예외 처리
+    const cats = Cat;
+    res.status(200).send({
+      success: true,
+      data: {
+        cats,
+      },
+    });
+  } catch (error: any) {
+    res.status(400).send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// READ 특정 고양이 데이터 가져오기
+router.get("/cats/:id", (req: Request, res: Response) => {
+  try {
+    // db연결의 경우 예외 처리
+    const params = req.params; // 파라미터값을 가져와서
+    const cats = Cat.find((cat) => cat.id === params.id); // 데이터 조회
+    res.status(200).send({
+      success: true,
+      data: {
+        cats,
+      },
+    });
+  } catch (error: any) {
+    res.status(400).send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// CREATE 고양이 추가 api
+router.post("/cats", (req: Request, res: Response) => {
+  try {
+    const data = req.body; // body값 가져오기
+    Cat.push(data); // 데이터 추가 (데이터베이스의경우 데이터 추가)
+    res.status(200).send({
+      success: true,
+      data: { data },
+    });
+  } catch (error: any) {
+    res.status(400).send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+export default router;
+```
+
+4. app.ts에 라우터 등록
+
+```typescript
+import catsRouter from "./cats/cats.route";
+
+// ...미들 웨어들...
+app.use(catsRouter);
+
+//... 미들웨어들 이하행략
+```
+
+## express 싱글톤, 서비스 패턴
+
+---
+
+1. 싱글톤 패턴
