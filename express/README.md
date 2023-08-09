@@ -346,3 +346,111 @@ app.use(catsRouter);
 ---
 
 1. 싱글톤 패턴
+
+- 객체의 인스턴스가 오직한개만 생성되게 하는 패턴
+- 추후 객체에 접근할때 메모리 낭비를 덜할수있다
+
+```typescript
+//app.ts
+class Server {
+  public app: express.Application;
+
+  constructor() {
+    const app: express.Application = express();
+    this.app = app;
+  }
+
+  // 라우트 분리
+  private setRoute() {
+    this.app.use(catsRouter);
+  }
+
+  // 미들웨어 분리
+  private setMiddleware() {
+    // 미들웨어
+    this.app.use((req, res, next) => {
+      console.log(req.rawHeaders[1]);
+      console.log("this is middleware");
+      next(); // 라우터를 찾을수 있도록 (다음행동 지시)
+    });
+
+    // json middleware
+    this.app.use(express.json());
+
+    this.setRoute();
+
+    // 에러 미들웨어
+    this.app.use((req, res, next) => {
+      console.log("this is error middleware");
+      res.send({ error: "404 not found error" });
+    });
+  }
+
+  // 서버 실행 로직
+  public listen() {
+    this.setMiddleware();
+    this.app.listen(8000, () => {
+      console.log("server is on....");
+    });
+  }
+}
+```
+
+서버 실행로직의 경우 아래와같이 변경
+
+```typescript
+//app.ts
+function init() {
+  const server = new Server();
+  server.listen();
+}
+
+init();
+```
+
+2. 서비스 패턴
+
+- 라우터와 비즈니스 로직을 분리하여 유지보수 및 가독성이 좋게 코드를 만든다
+
+```typescript
+// cats.service.ts
+export const readAllcat = (req: Request, res: Response) => {
+  try {
+    // db연결의 경우 예외 처리
+    const cats = Cat;
+    res.status(200).send({
+      success: true,
+      data: {
+        cats,
+      },
+    });
+  } catch (error: any) {
+    res.status(400).send({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+// cats.route.ts
+router.get("/cats", readAllcat);
+```
+
+- 기존 비즈니스 로직을 분리시켜 라우트에서는 비즈니스 로직을 가져오는 형태로 변경
+
+```typescript
+// cats.route.ts
+router.get("/cats", readAllcat);
+
+router.get("/cats/:id", readCat);
+
+router.post("/cats", createCat);
+
+router.put("/cats/:id", updateCat);
+
+router.patch("/cats/:id", updatePartialCat);
+
+router.delete("/cats/:id", deleteCat);
+```
+
+- 서비스와 라우트를 분리하여 확연히 짧아진코드
